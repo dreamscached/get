@@ -54,6 +54,8 @@ fi
 url="$1"
 
 (
+    set -e
+
     if ! cd "$dir"; then
         echo "Error: could not change directory to $dir."
         exit 1
