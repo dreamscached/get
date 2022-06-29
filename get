@@ -1,0 +1,63 @@
+#!/bin/sh
+
+## CONFIG ##
+
+dir="$(xdg-user-dir DOWNLOAD)"
+
+
+## URL HANDLERS
+
+handle() { case "$url" in
+
+    # YouTube (yt-dlp)
+    http?://youtu.be/*|http?://youtube.com/watch\?v=*)
+        yt-dlp -q "$url";;
+
+    # Tenor (wget)
+    http?://tenor.com/view/*)
+        url="$(curl -s "$url" | perl -ne 'print $1 if /<meta class="dynamic" property="og:url" content="([^"]+)">/')"
+        _wget;;
+
+    # Discord (wget)
+    http?://*.discordapp.net/*)
+        url="$(printf "%s" "$url" | perl -ne 'print $1 if /(.*)(?:\?.*)?$/')"
+        _wget;;
+
+    # Pinterest (wget)
+    http?://*.pinterest.com/pin/*)
+        url="$(curl -s "$url" | perl -ne 'print "$1\n" while /"url":"([^"]+.mp4)"/g' | head -n 1)"
+        _wget
+        ;;
+
+    # Generic URLs (wget)
+    *.jpg|*.jpeg|*.png|*.gif) _wget;;
+
+    # Exit with error if unhandled.
+    *) _unhandled;;
+
+esac; }
+
+
+## INTERNAL ##
+
+_wget() { wget -q "$url"; }
+_unhandled() { echo "Unhandled URL."; exit 2; }
+
+
+## ENTRYPOINT ##
+
+if [ "$#" -eq 0 ]; then
+    echo "Usage: $0 URL"
+    exit 1
+fi
+
+url="$1"
+
+(
+    if ! cd "$dir"; then
+        echo "Error: could not change directory to $dir."
+        exit 1
+    fi
+
+    handle
+)
